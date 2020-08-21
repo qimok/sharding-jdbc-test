@@ -1,0 +1,147 @@
+buildscript {
+    ext {
+        jooqVersion = '3.13.4'
+        mysqlVersion = '5.1.45'
+        vjooqVersion = '4.3.0-SNAPSHOT'
+        flywayVersion = '5.2.4'
+        springBootPluginVersion = '2.1.9.RELEASE'
+        validationApiVersion='2.0.1.Final'
+        junitEngineVersion = '5.5.0'
+        // aspectjVersion = '1.9.4'
+    }
+
+    repositories {
+        maven {
+            url 'http://maven.aliyun.com/nexus/content/groups/public/'
+        }
+        jcenter()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:$springBootPluginVersion")
+        classpath group: 'org.jooq', name: 'jooq-meta', version: '3.13.1'
+        classpath group: 'org.jooq', name: 'jooq-codegen', version: '3.13.1'
+    }
+}
+
+plugins {
+    id 'org.springframework.boot' version '2.3.3.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.10.RELEASE'
+    id 'java'
+    id 'nu.studer.jooq' version '3.0.3'
+    id "org.flywaydb.flyway" version "5.2.4"
+}
+
+group = 'com.qimok.sharding'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    maven {
+        url 'http://maven.aliyun.com/nexus/content/groups/public/'
+    }
+    jcenter()
+    mavenCentral()
+}
+
+allprojects {
+    repositories {
+         maven {
+             name "aliyunmaven"
+             url "http://maven.aliyun.com/nexus/content/groups/public/"
+         }
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        dependencySubstitution {
+            substitute module('org.jooq:jooq') with module("org.jooq:jooq:$jooqVersion")
+            substitute module('org.jooq:jooq-codegen') with module("org.jooq:jooq-codegen:$jooqVersion")
+            substitute module('org.jooq:jooq-meta') with module("org.jooq:jooq-meta:$jooqVersion")
+            substitute module('javax.validation:validation-api') with module("javax.validation:validation-api:$validationApiVersion")
+        }
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-jooq'
+    compile("org.springframework.data:spring-data-commons:$springBootPluginVersion")
+    compile("org.springframework.boot:spring-boot-starter-validation:$springBootPluginVersion")
+    compileOnly 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    compile("mysql:mysql-connector-java:$mysqlVersion")
+    annotationProcessor 'org.projectlombok:lombok'
+    compile("org.flywaydb:flyway-core:$flywayVersion")
+    compile group: 'org.apache.shardingsphere', name: 'sharding-jdbc-spring-boot-starter', version: '4.0.1'
+    compile("org.springframework.boot:spring-boot-starter-test:$springBootPluginVersion")
+    testCompile("org.junit.jupiter:junit-jupiter-api:$junitEngineVersion")
+    compile("org.aspectj:aspectjrt")
+    compile("org.aspectj:aspectjweaver")
+
+}
+
+flyway {
+    url = 'jdbc:mysql://110.gz.cdb.myqcloud.com:3450/sharding_jdbc_test?useUnicode=true&characterEncoding=UTF-8&rewriteBatchedStatements=true'
+    locations = ['filesystem:src/main/resources/db/migration']
+    user = 'root'
+    password = '123456'
+    schemas = ['sharding_jdbc_test']
+}
+
+jooq {
+    version = jooqVersion
+    dependencies {
+        jooqRuntime("mysql:mysql-connector-java:$mysqlVersion")
+        // jooqRuntime("com.xxx:vjooq:$vjooqVersion") 依赖的是公司内部封装的插件
+    }
+    sample(sourceSets.main) {
+        def schema = 'sharding_jdbc_test'
+        jdbc {
+            driver = 'com.mysql.jdbc.Driver'
+            url = 'jdbc:mysql://110.gz.cdb.myqcloud.com:3450/sharding_jdbc_test?useUnicode=true&characterEncoding=UTF-8&rewriteBatchedStatements=true'
+            user = 'root'
+            password = '123456'
+        }
+        generator {
+            name = 'org.jooq.codegen.DefaultGenerator'
+            strategy {
+                // name = 'com.xxx.jooq.DDDStrategy' 依赖的是公司内部封装的插件
+            }
+            database {
+                name = 'org.jooq.meta.mysql.MySQLDatabase'
+                inputSchema = schema
+                outputSchema = schema
+                includes = '.*'
+                excludes = 'flyway_schema_history|message_.*'
+                includeExcludeColumns = true
+                forcedTypes {
+                    forcedType {
+                        name = 'varchar'
+                        expression = '.*'
+                        types = 'JSONB?'
+                    }
+                }
+            }
+            generate {
+                relations = true
+                deprecated = false
+                records = true
+                immutablePojos = true
+                fluentSetters = true
+            }
+            target {
+                packageName = 'db'
+                directory = 'src/main/java'
+            }
+        }
+    }
+}
