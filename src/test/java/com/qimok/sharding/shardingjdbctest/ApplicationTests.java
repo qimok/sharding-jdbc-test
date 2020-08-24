@@ -1,7 +1,7 @@
 package com.qimok.sharding.shardingjdbctest;
 
 import com.qimok.sharding.respository.ComplexRepo;
-import com.qimok.sharding.respository.MessageRepo;
+import com.qimok.sharding.respository.MessageShardRepo;
 import com.qimok.sharding.respository.SessionRepo;
 import db.tables.pojos.MessagePo;
 import db.tables.pojos.SessionPo;
@@ -24,7 +24,7 @@ public class ApplicationTests {
     private SessionRepo sessionRepo;
 
     @Autowired
-    private MessageRepo messageRepo;
+    private MessageShardRepo messageShardRepo;
 
     @Autowired
     private ComplexRepo complexRepo;
@@ -92,12 +92,12 @@ public class ApplicationTests {
     @Transactional("shardingTransactionManager")
     public void testShardingInsert() {
         Long sessionId = 1000L;
-        assertEquals(0, messageRepo.findMessages(sessionId).size());
+        assertEquals(0, messageShardRepo.findMessages(sessionId).size());
 
         String content = "test test";
-        assertTrue(messageRepo.insertMessage(sessionId, content));
+        assertTrue(messageShardRepo.insertMessage(sessionId, content));
 
-        List<MessagePo> messagePos = messageRepo.findMessages(sessionId);
+        List<MessagePo> messagePos = messageShardRepo.findMessages(sessionId);
         assertEquals(1, messagePos.size());
         MessagePo messagePo = messagePos.get(0);
         assertEquals(content, messagePo.getContent());
@@ -107,7 +107,7 @@ public class ApplicationTests {
     @Test
     public void testShardingFind() {
         Long sessionId = 1L;
-        List<MessagePo> messagePos = messageRepo.findMessages(sessionId);
+        List<MessagePo> messagePos = messageShardRepo.findMessages(sessionId);
 
         assertEquals(1, messagePos.size());
         assertEquals("test1", messagePos.get(0).getContent());
@@ -118,15 +118,15 @@ public class ApplicationTests {
     @Transactional("shardingTransactionManager")
     public void testShardingUpdate() {
         Long sessionId = 2L;
-        List<MessagePo> messagePos1 = messageRepo.findMessages(sessionId);
+        List<MessagePo> messagePos1 = messageShardRepo.findMessages(sessionId);
         assertEquals(1, messagePos1.size());
         MessagePo messagePo1 = messagePos1.get(0);
         assertEquals("test2", messagePo1.getContent());
 
         String newContent = "test test";
-        assertTrue(messageRepo.updateMessages(sessionId, newContent));
+        assertTrue(messageShardRepo.updateMessages(sessionId, newContent));
 
-        List<MessagePo> messagePos2 = messageRepo.findMessages(sessionId);
+        List<MessagePo> messagePos2 = messageShardRepo.findMessages(sessionId);
         assertEquals(1, messagePos2.size());
         MessagePo messagePo2 = messagePos2.get(0);
         assertEquals(newContent, messagePo2.getContent());
@@ -136,12 +136,12 @@ public class ApplicationTests {
     @Transactional("shardingTransactionManager")
     public void testShardingDelete() {
         Long sessionId = 100L;
-        List<MessagePo> messagePos1 = messageRepo.findMessages(sessionId);
+        List<MessagePo> messagePos1 = messageShardRepo.findMessages(sessionId);
         assertEquals(1, messagePos1.size());
 
-        assertTrue(messageRepo.deleteMessages(sessionId));
+        assertTrue(messageShardRepo.deleteMessages(sessionId));
 
-        List<MessagePo> messagePos2 = messageRepo.findMessages(sessionId);
+        List<MessagePo> messagePos2 = messageShardRepo.findMessages(sessionId);
         assertEquals(0, messagePos2.size());
     }
 
@@ -169,7 +169,7 @@ public class ApplicationTests {
     public void testShardingPagingQuery() {
         Integer pageNumber = 0;
 
-        List<MessagePo> messagePos = messageRepo.queryMessages(Arrays.asList(1L, 2L), 10, pageNumber);
+        List<MessagePo> messagePos = messageShardRepo.queryMessages(Arrays.asList(1L, 2L), 10, pageNumber);
         // 这里只验证分页时的 content
         assertEquals(2, messagePos.size());
         assertEquals(1L, messagePos.get(0).getId());
@@ -183,14 +183,14 @@ public class ApplicationTests {
     // ----------------测试单路由单个字段的查询------------------
     @Test
     public void testFullRoutingSingleField() {
-        String content = messageRepo.findContentBySessionId(100L);
+        String content = messageShardRepo.findContentBySessionId(100L);
         assertEquals("test100", content);
     }
 
     // ----------------测试全路由 count 查询------------------
     @Test
     public void testFullRoutingCount() {
-        Long count = messageRepo.findAllCount();
+        Long count = messageShardRepo.findAllCount();
         assertEquals(3L, count);
     }
 
@@ -201,7 +201,7 @@ public class ApplicationTests {
      */
     @Test
     public void testFullRoutingMax() {
-        Long maxId = messageRepo.findMaxId();
+        Long maxId = messageShardRepo.findMaxId();
         assertEquals(2L, maxId);
     }
 
@@ -255,7 +255,7 @@ public class ApplicationTests {
     private void assertSessionAndMessageByTM(Long id) {
         List<SessionPo> sessionPos1 = sessionRepo.findSession(id);
         assertEquals(0, sessionPos1.size());
-        List<MessagePo> messagePos1 = messageRepo.findMessages(id);
+        List<MessagePo> messagePos1 = messageShardRepo.findMessages(id);
         assertEquals(0, messagePos1.size());
     }
 

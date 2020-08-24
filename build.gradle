@@ -88,6 +88,7 @@ dependencies {
     compile("org.aspectj:aspectjweaver")
 }
 
+// 如果使用了多个数据源，需要明确指出 Flyway 使用哪个数据源
 flyway {
     url = 'jdbc:mysql://110.gz.cdb.myqcloud.com:3450/sharding_jdbc_test?useUnicode=true&characterEncoding=UTF-8&rewriteBatchedStatements=true'
     locations = ['filesystem:src/main/resources/db/migration']

@@ -1,6 +1,7 @@
 package com.qimok.sharding.respository;
 
 import com.google.common.collect.Lists;
+import com.qimok.sharding.interfaces.MessageDao;
 import db.tables.MessageTable;
 import db.tables.pojos.MessagePo;
 import lombok.RequiredArgsConstructor;
@@ -19,12 +20,24 @@ import static org.jooq.impl.DSL.max;
  */
 @Repository
 @RequiredArgsConstructor
-public class MessageRepo {
+public class MessageShardRepo implements MessageDao {
 
     @Resource(name = "shardDsl")
     private final DSLContext shardDsl;
 
     private final MessageTable table = MessageTable.MESSAGE;
+
+    @Override
+    public void sendMessage(MessagePo messagePo) {
+        shardDsl.insertInto(table)
+                .set(table.ID, 777L)
+                .set(table.SESSION_ID, messagePo.getSessionId())
+                .set(table.CONTENT, messagePo.getContent())
+                .set(table.STATUS, messagePo.getStatus())
+                .set(table.CREATED, LocalDateTime.now())
+                .set(table.UPDATED, LocalDateTime.now())
+                .execute();
+    }
 
     public Boolean insertMessage(Long sessionId, String content) {
         Boolean execute = shardDsl.insertInto(table)

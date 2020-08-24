@@ -30,7 +30,7 @@ public class ComplexRepo {
     private SessionRepo sessionRepo;
 
     @Autowired
-    private MessageRepo messageRepo;
+    private MessageShardRepo messageRepo;
 
     @Transactional("shardingTransactionManager")
     public void complexInsertSessionAndMessageByShardingTM(Long id) {

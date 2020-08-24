@@ -1,5 +1,6 @@
 package com.qimok.sharding.respository;
 
+import com.qimok.sharding.interfaces.SessionDao;
 import db.tables.SessionTable;
 import db.tables.pojos.SessionPo;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,7 @@ import java.util.List;
  */
 @Repository
 @RequiredArgsConstructor
-public class SessionRepo {
+public class SessionRepo implements SessionDao {
 
     @Resource(name = "noShardDsl")
     private final DSLContext noShardDsl;
@@ -24,24 +25,27 @@ public class SessionRepo {
 
     private final SessionTable table = SessionTable.SESSION;
 
+    @Override
     public Boolean insertSessionByNoShardDsl(Long id, Byte uuid) {
-        Boolean execute = noShardDsl.insertInto(table).set(table.ID, id).set(table.UUID, uuid).execute() == 1;
-        return execute;
+        return noShardDsl.insertInto(table).set(table.ID, id).set(table.UUID, uuid).execute() == 1;
     }
 
+    @Override
     public Boolean insertSessionByShardDsl(Long id, Byte uuid) {
-        Boolean execute = shardDsl.insertInto(table).set(table.ID, id).set(table.UUID, uuid).execute() == 1;
-        return execute;
+        return shardDsl.insertInto(table).set(table.ID, id).set(table.UUID, uuid).execute() == 1;
     }
 
+    @Override
     public Boolean deleteSession(Long id) {
         return noShardDsl.deleteFrom(table).where(table.ID.eq(id)).execute() == 1;
     }
 
+    @Override
     public Boolean updateSession(Long id, Byte newUuid) {
         return noShardDsl.update(table).set(table.UUID, newUuid).where(table.ID.eq(id)).execute() == 1;
     }
 
+    @Override
     public List<SessionPo> findSession(Long id) {
         return noShardDsl.selectFrom(table).where(table.ID.eq(id)).fetchInto(SessionPo.class);
     }
